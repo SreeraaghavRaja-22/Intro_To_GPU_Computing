@@ -64,4 +64,97 @@ Show and explain output, performance measurement (avg latency, problem size, har
 
 ### 8/28 (Module 1)
 
-- 
+- DLRM (Deep learning based Recommendation Systems) -> GPU Computing and HPC behind it
+- [TOP500 Link](https://top500.org/)
+  - Updates every 5 months (June and December)
+  - Run Evals to see peak performance they can achieve in terms of FLOPS
+
+#### Parallel Computing Pitfall
+
+- Seq Exec T: 100s Parallel Fraction: 90% parallelizable is 1000x faster
+- New time = (1 - 0.9) x 100 + (0.9 x 100) / 1000 = 10.09s
+- Overall Speedup: 100/10.09 = 9.91x
+- Sequential Portion that slows down the process: Initialize the environment, global states
+- Moore's Law and Dennard Scaling
+
+#### Amdahl's Scaling
+
+- For an application with:
+  - t = original sequential execution time
+  - p = fraction of execution that is parallelizable
+  - s = speedup achieved on parallelizable part
+- New time: ((1-p) + p/s) * t
+- Overall Speedup: 1 / ((1 - p) + p/s)
+  - As s approaches infinity, maximum speedup approaches 1/(1-p)
+  - Max Speedup < 1/(1 - p)
+- Reduce transfers, synch, launch overhead, and serial setup
+
+### 9/2 (Module 2)
+
+- **Question for Current Module**
+  - Where does data parallelism appear in a serial loop?
+  - How do the CPU and GPU divide responsiblity?
+  - How are thousands of threads organized?
+  - How does one thread find its data element?
+  - How do we handle boundaries, errors, and synchronous execution?
+  - How should we measure whether the program is actually faster?
+
+- **Data Parallelism**
+  - **Task Parallelism (Different Operation)**
+    - Different operations performed on same or different data elements
+    - Usually, a modest number of tasks unleashing a modest amount of parallelism
+  - **Data Parallelism (Same Operation, many elements)**
+    - The same operation applies to many different data elements
+    - Potentially massive amounts of data unleashing massive amounts of parallelism
+    - GPU Programming often begins by finding this repeated operation
+    - GPU programming is typically **data parallelism**
+- **Cude Program Coordinates Two Processors and Two Memory Spaces**
+  - Host - CPU
+    - Runs sequential control and launches work
+  - Device - GPU
+    - Runs many parallel threads
+    - in explicit-memory model, data must be moved between host and device memory
+  - The CPU and GPU have separate memories and cannot access each others' memories
+    - There is an advanced feature in modern systems that can
+- **First CUDA Program follows a five-stage lifecycle**
+  - Allocate device memory
+  - Copy inputs host -> device
+  - Launch the computaiton **kernel** on the GPU
+  - Copy results device -> host
+  - Free device memory
+  - **Correctness requires every stage**
+- **cudeMalloc and cudaFree**
+  - `cudaMalloc` receives the address of the device pointer and a size in bytes
+  - `cudaFree` releases the device allocation
+  - Always calculate bytes explicitly: N * size (elements type)
+
+```cpp
+size_t bytes = N * sizeof(float);
+cudaMalloc((void**)&x_d, bytes);
+
+// use x_d on the device
+
+cudaFree(x_d)
+```
+
+```cpp
+// Actual Function Signature 
+cudeError_t cudaMalloc(void **devPtr, size_t size);
+```
+
+- devPtr: pointer to pointer to allocated device memory
+- size: requestion allocation size in bytes, typical errors could be OOM errors
+
+```cpp
+cudaError_t cudaFree(void *devPtr);
+```
+
+- devPtr: pointer to device memory to free if code is complex then double free could happen
+
+```cudeMemcpy(destination, source, byte count, direction)
+```
+
+- HostToDevice copies input to the GPU
+- DeviceToHost return results to the CPU
+- Current research is on how to balance/partition to help with parallelism
+- There is a hierarchy to be able to scale
