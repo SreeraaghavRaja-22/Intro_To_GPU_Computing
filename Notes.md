@@ -158,3 +158,50 @@ cudaError_t cudaFree(void *devPtr);
 - DeviceToHost return results to the CPU
 - Current research is on how to balance/partition to help with parallelism
 - There is a hierarchy to be able to scale
+
+## 9/9 (Module 3)
+  
+- Parallel vector thread with boundary checks
+  - Launch Code:
+  - Kernel Code:
+- Nvcc seprates host and device compilation paths
+  - Host C/C++ code targets the CPU toolchain
+  - Device code targets GPU instruction path
+    - PTX = Parallel Thread Execution -> Virtual ISA
+    - SASS = Shader Assembly -> native GPU machine instructions
+  - CUDA source code combines both roles, and nvcc coordinates their compilation and linking
+- **Function Qualifiers Specify where Code Executes & Who May Call It**
+  - Keywords that differentiate where a function is intended to run
+    - \__host__\: executes on host, called from host
+    - \__global__\: executes on device, called from host
+    - \__device__\: executes on device, called from device
+    - The qualifier is part of a function's execution contract
+    - Why need \__host__\ if it's the default?
+    - Keyword \__host__\ is useful when needing to mark a function as an executable on both the host and the device
+    - Some helper functions can be compiled for both host and device
+      - Combining \__host__\ and \__device__\
+      - The function must still use operations supported by each target
+      - Use this deliberately; duplicated compilation can produce target-specific constraints
+    - **Kernel Launches are Asynchronous with Respect to the Host**
+      - By default, GPU Kernel calls are asynchronous
+      - Use cudaError_t cudeDeviceSynchronize()
+        - Blocks until the device as completed preceding request tasks
+      - Synchronous is a correctness or measurement tool, excessive synchronization can destroy concurrency
+    - **Error Checking Turns Silent Failture into Actionable Evidence**
+      - Principles
+        - check CUDA Runtime API return values
+        - Check for errors for every kernel launch
+        - Fail close to the cause; otherwise debugging becomes guesswork
+      - Practices
+        - Most CUDA Runtime API calles return a cudaError_t status
+        - After a kernel launch: cudaGetLastError() to check for launch errors
+        - Use cudaDeviceSynchronize
+    - **How to measure GPU Speedup?**
+      - **Define the comparison:** kernel-only or end-to-end?
+        - Kernel Speedup != Application Speedup
+      - **Warm up** before measuring steady state performance
+      - **Account for asynchronous launches** with CUDA events or explicit synchronization
+        - CPU Timers measure host-side elapsed time; CUDA events measure time on the GPU execution timeline
+      - **Include transfers and allocation** when they belong to the real workflow
+      - **Verify correctness** before trusting performance
+      - **Report context:** problem size, hardware, software, and methodology
