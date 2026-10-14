@@ -1,0 +1,8 @@
+N=257
+Threads=512
+Blocks=2
+Threads/Block = 256
+Tolerance = 0.000010
+CPU_Result=29982752
+GPU_RESULT=29981712
+PASS/FAIL: PASS

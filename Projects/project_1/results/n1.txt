@@ -1,0 +1,13 @@
+N=1
+Threads=256
+Blocks=1
+Threads/Block = 256
+Tolerance = 0.000010
+CPU_Result=38073424
+GPU_RESULT=38073392
+PASS/FAIL: PASS
+Timing Results
+CPU Time = 0.000020
+CPU_MT Time = 0.165530
+GPU Kernel Time = 0.006720
+GPU Application Time=3.069887
