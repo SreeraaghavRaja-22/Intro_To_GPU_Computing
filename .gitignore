@@ -1,0 +1,8 @@
+# Compiled CUDA binaries (no file extension, so list them by path)
+lab1/lab1
+lab2/lab2
+
+# Object files and other build output
+*.o
+*.out.tmp
+a.out
