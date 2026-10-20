@@ -49,4 +49,21 @@ for dim2s in "16 16" "32 8"; do
     ./lab2 --part mm --M 2048 --K 1024 --N 1536 --bx "$BX" --by "$BY"
 done
 
+echo
+echo "---- Part B Public Tests ----"
+./lab2 --part blur --input public_test_images/test_1x1.pgm   --R 1
+./lab2 --part blur --input public_test_images/test_3x5.pgm   --R 1
+./lab2 --part blur --input public_test_images/test_17x19.pgm --R 2
+./lab2 --part blur --input images/irr_grayscale_test_image.pgm --R 2
 
+echo
+echo "---- Part B Compute Sanitizer (irregular image, R=2) ----"
+compute-sanitizer --tool memcheck ./lab2 --part blur --input images/irr_grayscale_test_image.pgm --R 2
+
+echo
+echo "---- Part B Timing Study (irr_grayscale_test_image.pgm, 899x719, R=2) ----"
+for shape in "16 16" "32 8"; do
+    read -r BX BY <<< "$shape"
+    echo "--- block ${BX}x${BY} ---"
+    ./lab2 --part blur --input images/irr_grayscale_test_image.pgm --R 2 --bx "$BX" --by "$BY"
+done

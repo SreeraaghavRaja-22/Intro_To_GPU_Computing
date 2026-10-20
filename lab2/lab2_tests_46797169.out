@@ -1,0 +1,66 @@
+---- Environment ----
+Tue Oct 20 01:51:48 AM EDT 2026
+c1105a-s9.ufhpc
+name, driver_version, memory.total [MiB]
+NVIDIA L4, 580.178.04, 23034 MiB
+Cuda compilation tools, release 13.2, V13.2.78
+Build cuda_13.2.r13.2/compiler.37668154_0
+
+---- Build ----
+nvcc -O2 -lineinfo -std=c++17 lab2.cu -o lab2
+
+---- Part A Public Tests ----
+--- M=1 K=1 N=1 ---
+Part = mm, M = 1, K = 1, N = 1, block = 16x16, grid = 1x1, PASS
+Median kernel Time = 0.0031 ms over 22 tests (min 0.0028, max 0.0041)
+--- M=3 K=5 N=2 ---
+Part = mm, M = 3, K = 5, N = 2, block = 16x16, grid = 1x1, PASS
+Median kernel Time = 0.0031 ms over 22 tests (min 0.0031, max 0.0041)
+--- M=16 K=16 N=16 ---
+Part = mm, M = 16, K = 16, N = 16, block = 16x16, grid = 1x1, PASS
+Median kernel Time = 0.0036 ms over 22 tests (min 0.0031, max 0.0048)
+--- M=31 K=17 N=50 ---
+Part = mm, M = 31, K = 17, N = 50, block = 16x16, grid = 4x2, PASS
+Median kernel Time = 0.0040 ms over 22 tests (min 0.0031, max 0.0041)
+--- M=65 K=33 N=129 ---
+Part = mm, M = 65, K = 33, N = 129, block = 16x16, grid = 9x5, PASS
+Median kernel Time = 0.0041 ms over 22 tests (min 0.0031, max 0.0048)
+
+---- Compute Sanitizer ----
+========= COMPUTE-SANITIZER
+Part = mm, M = 31, K = 17, N = 50, block = 16x16, grid = 4x2, PASS
+Median kernel Time = 0.0910 ms over 22 tests (min 0.0879, max 0.1115)
+========= ERROR SUMMARY: 0 errors
+
+---- Timing Study (M=2048, K = 1024, N = 1536) ----
+--- Chose M, K, and N values that are multiples of 16 or 32 ---
+--- block 16x16 ---
+Part = mm, M = 2048, K = 1024, N = 1536, block = 16x16, grid = 96x128, PASS
+Median kernel Time = 4.2404 ms over 22 tests (min 3.5256, max 4.4012)
+--- block 32x8 ---
+Part = mm, M = 2048, K = 1024, N = 1536, block = 32x8, grid = 48x256, PASS
+Median kernel Time = 4.1359 ms over 22 tests (min 3.5021, max 4.4513)
+
+---- Part B Public Tests ----
+Part = blur, input = public_test_images/test_1x1.pgm, size = 1x1, R = 1, block = 16x16, grid = 1x1, PASS
+Median kernel Time = 0.0031 ms over 22 tests (min 0.0030, max 0.0041)
+Part = blur, input = public_test_images/test_3x5.pgm, size = 3x5, R = 1, block = 16x16, grid = 1x1, PASS
+Median kernel Time = 0.0039 ms over 22 tests (min 0.0031, max 0.0042)
+Part = blur, input = public_test_images/test_17x19.pgm, size = 17x19, R = 2, block = 16x16, grid = 2x2, PASS
+Median kernel Time = 0.0041 ms over 22 tests (min 0.0039, max 0.0051)
+Part = blur, input = images/irr_grayscale_test_image.pgm, size = 899x719, R = 2, block = 16x16, grid = 57x45, PASS
+Median kernel Time = 0.0235 ms over 23 tests (min 0.0225, max 0.0265)
+
+---- Part B Compute Sanitizer (irregular image, R=2) ----
+========= COMPUTE-SANITIZER
+Part = blur, input = images/irr_grayscale_test_image.pgm, size = 899x719, R = 2, block = 16x16, grid = 57x45, PASS
+Median kernel Time = 5.0497 ms over 22 tests (min 4.9787, max 5.1280)
+========= ERROR SUMMARY: 0 errors
+
+---- Part B Timing Study (irr_grayscale_test_image.pgm, 899x719, R=2) ----
+--- block 16x16 ---
+Part = blur, input = images/irr_grayscale_test_image.pgm, size = 899x719, R = 2, block = 16x16, grid = 57x45, PASS
+Median kernel Time = 0.0236 ms over 22 tests (min 0.0225, max 0.0256)
+--- block 32x8 ---
+Part = blur, input = images/irr_grayscale_test_image.pgm, size = 899x719, R = 2, block = 32x8, grid = 29x90, PASS
+Median kernel Time = 0.0236 ms over 22 tests (min 0.0234, max 0.0254)
