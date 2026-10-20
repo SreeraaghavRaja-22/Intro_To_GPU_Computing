@@ -133,8 +133,54 @@ int main(int argc, char** argv){
     float* B_d = nullptr;
     float* C_d = nullptr; 
 
+    // Create four host buffers 
+    std::vector<float> A_h(static_cast<size_t>(M) * K);
+    std::vector<float> B_h(static_cast<size_t>(K) * N);
+    std::vector<float> got(static_cast<size_t>(M) * N);
+    std::vector<float> ref(static_cast<size_t>(M) * N);
+
+    // Fill A and B with random values in [-1, 1] (this is to avoid all-one passes or all 0 passes for wrong Kernels)
+    std::mt19937 gen(42); // fixed seed
+    std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+
+    for(size_t i = 0; i < A_h.size(); ++i) A_h[i] = dist(gen);
+    for(size_t i = 0; i < B_h.size(); ++i) B_h[i] = dist(gen);
+
     CUDA_CHECK(cudaMalloc(&A_d, bytesA));
     CUDA_CHECK(cudaMalloc(&B_d, bytesB));
     CUDA_CHECK(cudaMalloc(&C_d, bytesC));   
+    
+    // get raw pointers to first elements for A_h and B_h since they are vectors
+    CUDA_CHECK(cudaMemcpy(A_d, A_h.data(), bytesA, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(B_d, B_h.data(), bytesB, cudaMemcpyHostToDevice));
 
+    // create block shape and grid size
+    dim3 block(bx, by);
+    dim3 grid(((N + block.x -1) / block.x), (M + block.y - 1) / block.y);
+
+    // launch kernel
+    matmul<<<grid, block>>>(A_d, B_d, C_d, M, K, N);
+
+    // Check Launch to ensure there are no hidden errors
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
+    // Copy C back to host
+    CUDA_CHECK(cudaMemcpy(got.data(), C_d, bytesC, cudaMemcpyDeviceToHost));
+
+    // Run the CPU reference
+    matmul_cpu(A_h.data(), B_h.data(), ref.data(), M, K, N);
+
+    // Compare the CPU and GPU results
+    bool pass = verify(got.data(), ref.data(), M, N);
+
+    // print out results
+    std::fprintf(stdout, "Part = %s, M = %d, K = %d, N = %d, block = %dx%d, grid = %ux%u, %s\n", part, M, K, N, bx, by, grid.x, grid.y, pass ? "PASS" : "FAIL");
+
+    // free the allocated memory
+    CUDA_CHECK(cudaFree(A_d));
+    CUDA_CHECK(cudaFree(B_d));
+    CUDA_CHECK(cudaFree(C_d));
+
+    return pass ? 0 : 1;
 }
