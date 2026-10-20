@@ -39,3 +39,14 @@ done
 echo 
 echo "---- Compute Sanitizer ----"
 compute-sanitizer --tool memcheck ./lab2 --part mm --M 31 --K 17 --N 50
+
+echo 
+echo "---- Timing Study (M=2048, K = 1024, N = 1536) ----"
+echo "--- Chose M, K, and N values that are multiples of 16 or 32 ---"
+for dim2s in "16 16" "32 8"; do
+    read -r BX BY <<< "$dim2s"
+    echo "--- block ${BX}x${BY} ---"
+    ./lab2 --part mm --M 2048 --K 1024 --N 1536 --bx "$BX" --by "$BY"
+done
+
+

@@ -69,6 +69,8 @@ bool verify(const float* got, const float* ref, int M, int N){
 }
 
 int main(int argc, char** argv){
+
+    // ------------- Initialization -------------- //
     // Create default input values if the flags aren't given
     const char* part = "mm";
     // default M, K, and N values
@@ -158,6 +160,7 @@ int main(int argc, char** argv){
     dim3 block(bx, by);
     dim3 grid(((N + block.x -1) / block.x), (M + block.y - 1) / block.y);
 
+    // ------------------ Kernel Launch ----------------- //
     // launch kernel
     matmul<<<grid, block>>>(A_d, B_d, C_d, M, K, N);
 
@@ -175,8 +178,43 @@ int main(int argc, char** argv){
     bool pass = verify(got.data(), ref.data(), M, N);
 
     // print out results
-    std::fprintf(stdout, "Part = %s, M = %d, K = %d, N = %d, block = %dx%d, grid = %ux%u, %s\n", part, M, K, N, bx, by, grid.x, grid.y, pass ? "PASS" : "FAIL");
+    std::printf("Part = %s, M = %d, K = %d, N = %d, block = %dx%d, grid = %ux%u, %s\n", part, M, K, N, bx, by, grid.x, grid.y, pass ? "PASS" : "FAIL");
 
+
+    // --------- Timing Study -------------- //
+    cudaEvent_t start, stop;
+    CUDA_CHECK(cudaEventCreate(&start));
+    CUDA_CHECK(cudaEventCreate(&stop));
+
+    // warm up launch
+    matmul<<<grid, block>>>(A_d, B_d, C_d, M, K, N);
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
+    const int tests = 22;
+    std::vector<float> times(tests);
+    for (int t = 0; t < tests; ++t){
+        CUDA_CHECK(cudaEventRecord(start));
+        matmul<<<grid, block>>>(A_d, B_d, C_d, M, K, N);
+        CUDA_CHECK(cudaEventRecord(stop));
+        CUDA_CHECK(cudaEventSynchronize(stop));
+        CUDA_CHECK(cudaGetLastError());
+        CUDA_CHECK(cudaEventElapsedTime(&times[t], start, stop)); // get the time in ms
+    }
+
+    // sort the times
+    std::sort(times.begin(), times.end());
+
+    // find median time, more complicated for even number of tests
+    float median = (tests % 2) ? times[tests / 2] : 0.5f * (times[tests / 2 - 1] + times[tests / 2]);
+
+    // Print the median time
+    std::printf("Median kernel Time = %.4f ms over %d tests (min %.4f, max %.4f)\n", median, tests, times.front(), times.back());
+
+    // Destory the Cuda events now
+    CUDA_CHECK(cudaEventDestroy(start));
+    CUDA_CHECK(cudaEventDestroy(stop));
+    
     // free the allocated memory
     CUDA_CHECK(cudaFree(A_d));
     CUDA_CHECK(cudaFree(B_d));
