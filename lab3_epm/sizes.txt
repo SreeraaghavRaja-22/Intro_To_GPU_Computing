@@ -1,0 +1,23 @@
+# Option A. Write your own Slurm script. Format: ./epm H W atoms seed [options]
+
+# Correctness: CPU reference enabled, including ragged grids and atom counts.
+./epm 1 1 1 0
+./epm 100 75 37 1
+./epm 257 129 1003 2
+./epm 33 17 4000 3
+./epm 64 64 64 4
+./epm 1 65 17 5
+./epm 65 1 17 6
+
+# Memory checker on a ragged case (GPU node).
+compute-sanitizer --tool memcheck --error-exitcode 1 ./epm 100 75 37 1
+
+# Benchmark: start with one iteration; CPU reference may take much longer.
+./epm 2045 2047 4000 7 --iters 1
+# Short development timing, with comparison to the GPU baseline.
+./epm 2045 2047 4000 7 --iters 10 --skip-ref
+# Student-only timing: replace <MS> with the measured baseline per-iteration ms.
+./epm 2045 2047 4000 7 --iters 10 --skip-ref --skip-baseline --baseline-ms <MS>
+
+# Increase --iters as needed for stable per-iteration timing.
+# Record the iteration count and use the same GPU and inputs when comparing versions.
